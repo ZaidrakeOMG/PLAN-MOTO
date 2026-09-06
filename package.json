@@ -1,0 +1,32 @@
+{
+  "name": "plan-moto-mobile",
+  "private": true,
+  "version": "4.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"tsx watch server/index.ts\"",
+    "build": "tsc -b && vite build",
+    "start": "tsx server/index.ts",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tsx": "^4.20.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.12",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.1",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^5.0.2",
+    "concurrently": "^9.2.1",
+    "tailwindcss": "^4.1.12",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.4"
+  }
+}

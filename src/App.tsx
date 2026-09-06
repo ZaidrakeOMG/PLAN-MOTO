@@ -188,7 +188,7 @@ function App() {
     setSavingTask(saveKey)
 
     try {
-      const response = await fetch(`/api/plan/${week.id}/tasks/${task.key}`, {
+      const response = await fetch(`/api/plan?week=${week.id}&task=${task.key}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listo: next }),

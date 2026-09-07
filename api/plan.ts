@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
-import { initialPlan } from '../src/data'
-import type { PlanWeek, TaskKey, TaskStates, WeekStatus } from '../src/types'
+import { initialPlan } from '../src/data.js'
+import type { PlanWeek, TaskKey, TaskStates, WeekStatus } from '../src/types.js'
 
 const TASK_KEYS: TaskKey[] = [
   'licenciaPlacas',

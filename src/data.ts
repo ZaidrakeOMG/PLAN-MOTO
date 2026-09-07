@@ -1,4 +1,4 @@
-import type { PlanWeek } from './types'
+import type { PlanWeek } from './types.js'
 
 export const initialPlan: PlanWeek[] = [
   {

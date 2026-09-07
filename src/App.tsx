@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { initialPlan } from './data'
 import type { PlanWeek, TaskKey, TaskStates } from './types'
 
@@ -43,7 +43,7 @@ const TASKS: TaskDefinition[] = [
     shortLabel: 'Moto',
     icon: '🏍️',
     amount: (week) => week.motoApartado,
-    detail: (week) => (week.quincenaMoto ? `Quincena ${week.quincenaMoto}` : null),
+    detail: (week) => (week.quincenaMoto ? `Mensualidad ${week.quincenaMoto}` : null),
   },
   {
     key: 'cascos',
@@ -137,6 +137,7 @@ function App() {
   const [selectedIndex, setSelectedIndex] = useState(() => getCurrentWeekIndex(initialPlan))
   const [loading, setLoading] = useState(true)
   const [savingTask, setSavingTask] = useState<string | null>(null)
+  const lastAutomaticWeekIndex = useRef(getCurrentWeekIndex(initialPlan))
 
   useEffect(() => {
     let active = true
@@ -148,13 +149,17 @@ function App() {
         const data = await response.json()
         if (!active) return
         const nextPlan = Array.isArray(data.plan) && data.plan.length ? data.plan : initialPlan
+        const currentIndex = getCurrentWeekIndex(nextPlan)
         setPlan(nextPlan)
         setTaskStates(data.taskStates ?? {})
-        setSelectedIndex(getCurrentWeekIndex(nextPlan))
+        setSelectedIndex(currentIndex)
+        lastAutomaticWeekIndex.current = currentIndex
       } catch {
         if (!active) return
+        const currentIndex = getCurrentWeekIndex(initialPlan)
         setPlan(initialPlan)
-        setSelectedIndex(getCurrentWeekIndex(initialPlan))
+        setSelectedIndex(currentIndex)
+        lastAutomaticWeekIndex.current = currentIndex
       } finally {
         if (active) setLoading(false)
       }
@@ -165,6 +170,30 @@ function App() {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    function selectNewCurrentWeek() {
+      const currentIndex = getCurrentWeekIndex(plan)
+      if (currentIndex === lastAutomaticWeekIndex.current) return
+
+      lastAutomaticWeekIndex.current = currentIndex
+      setSelectedIndex(currentIndex)
+    }
+
+    const intervalId = window.setInterval(selectNewCurrentWeek, 60_000)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') selectNewCurrentWeek()
+    }
+
+    window.addEventListener('focus', selectNewCurrentWeek)
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', selectNewCurrentWeek)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [plan])
 
   const week = plan[selectedIndex] ?? plan[0]
   const tasks = useMemo(() => activeTasks(week), [week])
@@ -188,7 +217,7 @@ function App() {
     setSavingTask(saveKey)
 
     try {
-      const response = await fetch(`/api/plan?week=${week.id}&task=${task.key}`, {
+      const response = await fetch(`/api/plan/${week.id}/tasks/${task.key}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listo: next }),

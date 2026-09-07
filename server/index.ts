@@ -191,12 +191,16 @@ async function readSupabaseTasks(client: SupabaseClient): Promise<TaskStates> {
   return states
 }
 
-async function seedPlanIfEmpty(client: SupabaseClient) {
+async function syncPlanTemplate(client: SupabaseClient) {
   const remote = await readSupabasePlan(client)
-  if (remote.length) return remote
-  const local = await readLocalPlan()
-  await upsertSupabasePlan(client, local)
-  return local
+  const statusByWeek = new Map(remote.map((row) => [row.id, row.status]))
+  const syncedPlan = initialPlan.map((row) => ({
+    ...row,
+    status: statusByWeek.get(row.id) ?? row.status,
+  }))
+
+  await upsertSupabasePlan(client, syncedPlan)
+  return readSupabasePlan(client)
 }
 
 async function calculateAndSaveWeekStatus(client: SupabaseClient | null, weekNumber: number, plan: PlanWeek[], states: TaskStates) {
@@ -233,7 +237,7 @@ app.get('/api/plan', async (_req, res) => {
 
   try {
     if (client) {
-      const plan = await seedPlanIfEmpty(client)
+      const plan = await syncPlanTemplate(client)
       const taskStates = await readSupabaseTasks(client)
       await writeLocalPlan(plan)
       await writeLocalTasks(taskStates)
@@ -295,7 +299,7 @@ app.patch('/api/plan/:week/tasks/:task', async (req, res) => {
         .upsert({ semana: weekNumber, apartado: task, listo }, { onConflict: 'semana,apartado' })
       if (error) throw error
 
-      plan = await seedPlanIfEmpty(client)
+      plan = await syncPlanTemplate(client)
       statesForStatus = await readSupabaseTasks(client)
       await writeLocalTasks(statesForStatus)
     }
